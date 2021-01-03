@@ -165,7 +165,7 @@ export const updateBounty = (req, res, next) => {
     id,
     {
       $set: {
-        company: body.completed,
+        company: body.company,
       },
     },
     { returnOriginal: true }

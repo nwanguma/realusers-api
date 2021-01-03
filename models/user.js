@@ -1,8 +1,12 @@
-import { Schema, model } from "mongoose";
 import validator from "validator";
+import pkg from "mongoose";
+
+const { Schema, model } = pkg;
 
 const userSchema = Schema(
   {
+    firstname: String,
+    lastname: String,
     email: {
       type: String,
       required: true,
@@ -18,10 +22,9 @@ const userSchema = Schema(
       type: String,
       required: true,
       minlength: 3,
-      unique: true,
       trim: true,
       validate: {
-        validator: () => {
+        validator: (value) => {
           return validator.isStrongPassword(value, {
             minLength: 8,
             minLowercase: 1,
