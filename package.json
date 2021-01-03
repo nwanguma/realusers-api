@@ -1,6 +1,7 @@
 {
   "name": "realusers-api",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "repository": "https://github.com/nwanguma/realusers-api",
   "author": "Tochukwu Nwanguma <tochukwu@cico.ng>",

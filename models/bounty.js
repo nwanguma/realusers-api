@@ -1,5 +1,7 @@
-import { Schema, model } from "mongoose";
 import validator from "validator";
+import pkg from "mongoose";
+
+const { Schema, model } = pkg;
 
 const bountySchema = Schema(
   {
