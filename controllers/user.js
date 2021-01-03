@@ -52,11 +52,14 @@ export const createUser = (req, res, next) => {
 
   newUser
     .save()
-    .then((doc) => {
-      res.status(201).send({
+    .then(() => {
+      return newUser.generateAuthToken();
+    })
+    .then((token) => {
+      res.header("Authorization", token).status(201).send({
         success: true,
         message: "user created successfully",
-        data: doc,
+        data: newUser,
       });
     })
     .catch((err) => {

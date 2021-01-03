@@ -1,9 +1,12 @@
 import validator from "validator";
 import pkg from "mongoose";
+import jwt from "jsonwebtoken";
+import lodash from "lodash";
 
 const { Schema, model } = pkg;
+const { pick } = lodash;
 
-const userSchema = Schema(
+const UserSchema = new Schema(
   {
     firstname: String,
     lastname: String,
@@ -45,10 +48,43 @@ const userSchema = Schema(
     },
     age: String,
     bio: String,
+    tokens: [
+      {
+        access: {
+          type: String,
+          required: true,
+        },
+        token: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
 
-const User = model("User", userSchema);
+UserSchema.methods.toJSON = function () {
+  const user = this;
+  const userObject = user.toObject();
+
+  return pick(userObject, ["firstname", "lastname", "email", "age", "bio"]);
+};
+
+UserSchema.methods.generateAuthToken = function () {
+  const user = this;
+  const access = "auth";
+  const token = jwt
+    .sign({ _id: user._id.toHexString(), access }, "secretsalt")
+    .toString();
+
+  user.tokens.push({ access, token });
+
+  return user.save().then(() => {
+    return token;
+  });
+};
+
+const User = model("User", UserSchema);
 
 export default User;
