@@ -9,15 +9,21 @@ import {
   deleteBounty,
 } from "../controllers/bounty.js";
 
+import authenticate from "../middlewares/auth.js";
+
 const router = express.Router();
 
 router
   .route("/")
-  .get(getBounties)
-  .post(createBounty)
-  .patch(updateBounties)
-  .delete(deleteBounties);
+  .get(authenticate, getBounties)
+  .post(authenticate, createBounty)
+  .patch(authenticate, updateBounties)
+  .delete(authenticate, deleteBounties);
 
-router.route("/:id").get(getBounty).patch(updateBounty).delete(deleteBounty);
+router
+  .route("/:id")
+  .get(authenticate, getBounty)
+  .patch(authenticate, updateBounty)
+  .delete(authenticate, deleteBounty);
 
 export default router;

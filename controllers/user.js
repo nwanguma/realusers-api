@@ -1,6 +1,9 @@
 import User from "../models/user.js";
-import pkg from "lodash";
-const { pick } = pkg;
+import lodash from "lodash";
+import bcrypt from "bcryptjs";
+
+const { compare } = bcrypt;
+const { pick } = lodash;
 
 //@desc list all users
 //@route /api/v1/user
@@ -23,8 +26,6 @@ export const getUsers = (req, res, next) => {
       });
     })
     .catch((err) => {
-      console.log(err);
-
       res.status(400).send({
         message: "error",
         status: res.status,
@@ -67,6 +68,38 @@ export const createUser = (req, res, next) => {
         success: false,
         message: "Bad request",
         error: err,
+      });
+    });
+};
+
+//@desc login
+//@route /api/v1/user/login
+//@method POST
+//@access private
+export const loginUser = (req, res, next) => {
+  const body = pick(req.body, ["email", "password"]);
+
+  User.findByCredentials(body.email, body.password)
+    .then((user) => {
+      return user
+        .generateAuthToken()
+        .then((token) => {
+          res.header("Authorization", token).send({
+            success: true,
+            data: {
+              user,
+              token,
+            },
+          });
+        })
+        .catch((err) => {
+          res.status(400).send();
+        });
+    })
+    .catch((err) => {
+      res.status(401).send({
+        success: false,
+        message: "invalid credentials",
       });
     });
 };
@@ -138,6 +171,12 @@ export const getUser = (req, res, next) => {
 
   User.findById(id)
     .then((doc) => {
+      if (!doc)
+        return res.status(404).send({
+          success: true,
+          data: null,
+        });
+
       res.status(201).send({
         message: "success",
         status: res.status,

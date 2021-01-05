@@ -1,4 +1,3 @@
-import mongoose from "../db/mongoose.js";
 import Bounty from "../models/bounty.js";
 import pkg from "lodash";
 const { pick } = pkg;
@@ -127,6 +126,12 @@ export const getBounty = (req, res, next) => {
 
   Bounty.findById(id)
     .then((doc) => {
+      if (!doc)
+        return res.status(404).send({
+          success: false,
+          message: "User not found",
+        });
+
       res.status(201).send({
         message: "success",
         status: res.status,

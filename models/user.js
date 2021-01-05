@@ -2,6 +2,7 @@ import validator from "validator";
 import pkg from "mongoose";
 import jwt from "jsonwebtoken";
 import lodash from "lodash";
+import bcrypt from "bcryptjs";
 
 const { Schema, model } = pkg;
 const { pick } = lodash;
@@ -64,18 +65,78 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
+UserSchema.statics.findByCredentials = function (email, password) {
+  const User = this;
+
+  return User.findOne({ email }).then((user) => {
+    if (!user) return Promise.reject();
+
+    return new Promise((resolve, reject) => {
+      bcrypt.compare(password, user.password, (err, res) => {
+        if (!res) {
+          reject();
+        } else {
+          resolve(user);
+        }
+      });
+    });
+  });
+};
+
+UserSchema.pre("save", function (next) {
+  const user = this;
+
+  if (user.isModified("password")) {
+    bcrypt.genSalt(10, (err, salt) => {
+      bcrypt.hash(user.password, salt, (err, hash) => {
+        user.password = hash;
+
+        next();
+      });
+    });
+  } else {
+    next();
+  }
+});
+
 UserSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
 
-  return pick(userObject, ["firstname", "lastname", "email", "age", "bio"]);
+  const body = pick(userObject, [
+    "firstname",
+    "lastname",
+    "email",
+    "bio",
+    "age",
+  ]);
+
+  return body;
+};
+
+UserSchema.statics.findByToken = function (token) {
+  const User = this;
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, "thisismysecret");
+  } catch (e) {
+    return Promise.reject(e);
+  }
+
+  return User.findOne({
+    _id: decoded._id,
+    "tokens.token": token,
+    "tokens.access": "auth",
+  });
 };
 
 UserSchema.methods.generateAuthToken = function () {
   const user = this;
   const access = "auth";
+
   const token = jwt
-    .sign({ _id: user._id.toHexString(), access }, "secretsalt")
+    .sign({ _id: user._id.toHexString(), access }, "thisismysecret")
     .toString();
 
   user.tokens.push({ access, token });
