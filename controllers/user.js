@@ -2,45 +2,38 @@ import User from "../models/user.js";
 import lodash from "lodash";
 import bcrypt from "bcryptjs";
 
-const { compare } = bcrypt;
 const { pick } = lodash;
 
 //@desc list all users
 //@route /api/v1/user
 //@method GET
 //@access private
-export const getUsers = (req, res, next) => {
-  User.find({})
-    .then((docs) => {
-      if (!docs)
-        return res.status({
-          message: "success",
-          status: res.status,
-          data: [],
-        });
+export const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({});
 
-      res.status(200).send({
-        message: "success",
-        status: res.status,
-        data: docs,
+    if (!users)
+      return res.status({
+        success: true,
+        data: [],
       });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+
+    res.status(200).send({
+      success: true,
+      data: users,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc create user
 //@route /api/v1/user
 //@method POST
 //@access private
-export const createUser = (req, res, next) => {
+export const createUser = async (req, res, next) => {
   const body = pick(req.body, [
     "firstname",
     "lastname",
@@ -51,25 +44,23 @@ export const createUser = (req, res, next) => {
   ]);
   const newUser = new User(body);
 
-  newUser
-    .save()
-    .then(() => {
-      return newUser.generateAuthToken();
-    })
-    .then((token) => {
-      res.header("Authorization", token).status(201).send({
-        success: true,
-        message: "user created successfully",
-        data: newUser,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        success: false,
-        message: "Bad request",
-        error: err,
-      });
+  try {
+    const user = await newUser.save();
+
+    const token = await newUser.generateAuthToken();
+
+    if (!token) throw new Error();
+
+    res.header("Authorization", token).status(201).send({
+      success: true,
+      message: "user created successfully",
+      data: newUser,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc login
@@ -80,21 +71,20 @@ export const loginUser = (req, res, next) => {
   const body = pick(req.body, ["email", "password"]);
 
   User.findByCredentials(body.email, body.password)
-    .then((user) => {
-      return user
-        .generateAuthToken()
-        .then((token) => {
-          res.header("Authorization", token).send({
-            success: true,
-            data: {
-              user,
-              token,
-            },
-          });
-        })
-        .catch((err) => {
-          res.status(400).send();
+    .then(async (user) => {
+      try {
+        const token = await user.generateAuthToken();
+
+        res.header("Authorization", token).send({
+          success: true,
+          data: {
+            user,
+            token,
+          },
         });
+      } catch (e) {
+        res.status(400).send();
+      }
     })
     .catch((err) => {
       res.status(401).send({
@@ -108,153 +98,128 @@ export const loginUser = (req, res, next) => {
 //@method PATCH
 //@route /api/v1/user
 //@access private
-export const updateUsers = (req, res, next) => {
+export const updateUsers = async (req, res, next) => {
   const body = pick(req.body, ["bio"]);
 
-  User.updateMany(
-    {},
-    {
-      $set: {
-        bio: body.bio,
-      },
-    }
-  )
-    .then((docs) => {
-      res.status(200).send({
-        message: "success",
-        status: res.status,
-        data: docs,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
+  try {
+    const users = await User.updateMany(
+      {},
+      {
+        $set: {
+          bio: body.bio,
         },
-      });
+      }
+    );
+
+    if (!users) throw new Error();
+
+    res.status(200).send({
+      success: true,
+      data: users,
     });
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc update all users
 //@method DELETE
 //@route /api/v1/user
 //@access private
-export const deleteUsers = (req, res, next) => {
-  User.deleteMany({})
-    .then((docs) => {
-      res.status(200).send({
-        success: true,
-        message: "deleted successfully",
-        status: res.status,
-        data: docs,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+export const deleteUsers = async (req, res, next) => {
+  try {
+    const users = User.deleteMany({});
+
+    if (!users) throw new Error();
+
+    res.status(200).send({
+      success: true,
+      message: "deleted successfully",
+      data: users,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc list user
 //@route /api/v1/user/id
 //@method POST
 //@access private
-export const getUser = (req, res, next) => {
+export const getUser = async (req, res, next) => {
   const id = req.params.id;
 
-  User.findById(id)
-    .then((doc) => {
-      if (!doc)
-        return res.status(404).send({
-          success: true,
-          data: null,
-        });
+  try {
+    const user = await User.findById(id);
 
-      res.status(201).send({
-        message: "success",
-        status: res.status,
-        data: doc,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+    if (!user) throw new Error();
+
+    res.status(201).send({
+      success: true,
+      data: user,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc update user
 //@method PATCH
 //@route /api/v1/user/id
 //@access private
-export const updateUser = (req, res, next) => {
+export const updateUser = async (req, res, next) => {
   const id = req.params.id;
 
   const body = pick(req.body, ["firstname", "lastname", "age"]);
 
-  User.findByIdAndUpdate(
-    id,
-    {
-      $set: {
-        firstname: body.firstname,
-        lastname: body.lastname,
-        age: body.age,
-      },
-    },
-    { returnOriginal: true }
-  )
-    .then((doc) => {
-      res.status(201).send({
-        message: "success",
-        status: res.status,
-        data: doc,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
+  try {
+    const user = await User.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          firstname: body.firstname,
+          lastname: body.lastname,
+          age: body.age,
         },
-      });
+      },
+      { returnOriginal: true }
+    );
+
+    res.status(201).send({
+      success: true,
+      data: user,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc delete all users
 //@method DELETE
 //@route /api/v1/user
 //@access private
-export const deleteUser = (req, res, next) => {
+export const deleteUser = async (req, res, next) => {
   const id = req.params.id;
 
-  User.findByIdAndDelete(id)
-    .then((doc) => {
-      res.status(200).send({
-        success: true,
-        message: "updated successfully",
-        status: res.status,
-        data: doc,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+  try {
+    const user = User.findByIdAndDelete(id);
+
+    res.status(201).send({
+      success: true,
+      message: "user deleted successfully",
+      data: user,
     });
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };

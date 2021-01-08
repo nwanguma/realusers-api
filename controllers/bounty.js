@@ -6,40 +6,33 @@ const { pick } = pkg;
 //@route /api/v1/bounty
 //@method GET
 //@access private
-export const getBounties = (req, res, next) => {
-  Bounty.find({})
-    .then((docs) => {
-      if (!docs)
-        return res.status({
-          message: "success",
-          status: res.status,
-          data: [],
-        });
+export const getBounties = async (req, res, next) => {
+  try {
+    const docs = await Bounty.find({});
 
-      res.status(200).send({
-        message: "success",
-        status: res.status,
-        data: docs,
+    if (!docs)
+      return res.status(200).send({
+        success: true,
+        data: [],
       });
-    })
-    .catch((err) => {
-      console.log(err);
 
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+    res.status(200).send({
+      success: true,
+      data: docs,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+      data: null,
+    });
+  }
 };
 
 //@desc create bounty
 //@route /api/v1/bounty
 //@method POST
 //@access private
-export const createBounty = (req, res, next) => {
+export const createBounty = async (req, res, next) => {
   const body = pick(req.body, [
     "company",
     "submitted",
@@ -50,110 +43,100 @@ export const createBounty = (req, res, next) => {
   ]);
   const newBounty = new Bounty(body);
 
-  newBounty
-    .save()
-    .then((doc) => {
-      res.status(201).send({
-        success: true,
-        message: "bounty created successfully",
-        data: doc,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        success: false,
-        message: "Bad request",
-        error: err,
-      });
+  try {
+    const bounty = await newBounty.save();
+
+    if (!bounty) {
+      throw new Error({ some: "error" });
+    }
+
+    res.status(201).send({
+      success: true,
+      message: "bounty created successfully",
+      data: bounty,
     });
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      message: "Bad request",
+      error,
+    });
+  }
 };
 
 //@desc update all bounties
 //@method PATCH
 //@route /api/v1/bounty
 //@access private
-export const updateBounties = (req, res, next) => {
-  Bounty.updateMany({})
-    .then((docs) => {
-      res.status(200).send({
-        message: "success",
-        status: res.status,
-        data: docs,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+export const updateBounties = async (req, res, next) => {
+  try {
+    const bounties = await Bounty.updateMany({});
+
+    if (!bounties) {
+      throw new Error();
+    }
+
+    res.status(200).send({
+      success: true,
+      data: bounties,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc update all bounties
 //@method DELETE
 //@route /api/v1/bounty
 //@access private
-export const deleteBounties = (req, res, next) => {
-  Bounty.deleteMany({})
-    .then((docs) => {
-      res.status(200).send({
-        success: true,
-        message: "deleted successfully",
-        status: res.status,
-        data: docs,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+export const deleteBounties = async (req, res, next) => {
+  try {
+    const bounties = await Bounty.deleteMany({});
+
+    if (!bounties) throw new Error();
+
+    res.status(200).send({
+      success: true,
+      message: "bounties deleted successfully",
+      data: docs,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc create bounty
-//@route /api/v1/bounty
+//@route /api/v1/bounty/id
 //@method POST
 //@access private
-export const getBounty = (req, res, next) => {
+export const getBounty = async (req, res, next) => {
   const id = req.params.id;
 
-  Bounty.findById(id)
-    .then((doc) => {
-      if (!doc)
-        return res.status(404).send({
-          success: false,
-          message: "User not found",
-        });
+  try {
+    const bounty = await Bounty.findById(id);
 
-      res.status(201).send({
-        message: "success",
-        status: res.status,
-        data: doc,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+    if (!bounty) throw new Error();
+
+    res.status(201).send({
+      success: true,
+      data: bounty,
     });
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc update all bounties
 //@method PATCH
 //@route /api/v1/bounty
 //@access private
-export const updateBounty = (req, res, next) => {
+export const updateBounty = async (req, res, next) => {
   const id = req.params.id;
 
   const body = pick(req.body, [
@@ -166,56 +149,50 @@ export const updateBounty = (req, res, next) => {
     "tags",
   ]);
 
-  Bounty.findByIdAndUpdate(
-    id,
-    {
-      $set: {
-        company: body.company,
-      },
-    },
-    { returnOriginal: true }
-  )
-    .then((doc) => {
-      res.status(201).send({
-        message: "success",
-        status: res.status,
-        data: doc,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
+  try {
+    const bounty = await Bounty.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          company: body.company,
         },
-      });
+      },
+      { returnOriginal: true }
+    );
+
+    if (!bounty) throw new Error();
+
+    res.status(201).send({
+      success: true,
+      data: bounty,
     });
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };
 
 //@desc update all bounties
 //@method DELETE
 //@route /api/v1/bounty
 //@access private
-export const deleteBounty = (req, res, next) => {
+export const deleteBounty = async (req, res, next) => {
   const id = req.params.id;
 
-  Bounty.findByIdAndDelete(id)
-    .then((doc) => {
-      res.status(200).send({
-        success: true,
-        message: "updated successfully",
-        status: res.status,
-        data: doc,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send({
-        message: "error",
-        status: res.status,
-        data: {
-          message: "An error occured",
-        },
-      });
+  try {
+    const bounty = await Bounty.findByIdAndDelete(id);
+
+    if (!bounty) throw new Error();
+
+    res.status(200).send({
+      success: true,
+      message: "bounty updated successfully",
+      data: bounty,
     });
+  } catch (e) {
+    res.status(400).send({
+      success: false,
+    });
+  }
 };

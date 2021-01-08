@@ -1,6 +1,6 @@
 import validator from "validator";
 import pkg from "mongoose";
-import jwt from "jsonwebtoken";
+import jwt, { decode } from "jsonwebtoken";
 import lodash from "lodash";
 import bcrypt from "bcryptjs";
 
@@ -131,7 +131,7 @@ UserSchema.statics.findByToken = function (token) {
   });
 };
 
-UserSchema.methods.generateAuthToken = function () {
+UserSchema.methods.generateAuthToken = async function () {
   const user = this;
   const access = "auth";
 
@@ -141,9 +141,13 @@ UserSchema.methods.generateAuthToken = function () {
 
   user.tokens.push({ access, token });
 
-  return user.save().then(() => {
-    return token;
-  });
+  try {
+    const savedUser = user.save();
+
+    if (savedUser) return token;
+  } catch (e) {
+    throw new Error();
+  }
 };
 
 const User = model("User", UserSchema);

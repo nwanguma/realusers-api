@@ -9,17 +9,22 @@ import {
   deleteUser,
   loginUser,
 } from "../controllers/user.js";
+import authenticate from "../middlewares/auth.js";
 
 const router = express.Router();
 
 router
   .route("/")
-  .get(getUsers)
-  .post(createUser)
-  .patch(updateUsers)
-  .delete(deleteUsers);
+  .get(authenticate, getUsers)
+  .post(authenticate, createUser)
+  .patch(authenticate, updateUsers)
+  .delete(authenticate, deleteUsers);
 
-router.route("/:id").get(getUser).patch(updateUser).delete(deleteUser);
+router
+  .route("/:id")
+  .get(authenticate, getUser)
+  .patch(authenticate, updateUser)
+  .delete(authenticate, deleteUser);
 
 router.post("/login", loginUser);
 
