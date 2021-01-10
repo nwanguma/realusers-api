@@ -1,8 +1,53 @@
 import User from "../models/user.js";
 import lodash from "lodash";
-import bcrypt from "bcryptjs";
 
 const { pick } = lodash;
+
+//@desc create user
+//@route /api/v1/user
+//@method POST
+//@access private
+export const createUser = async (req, res, next) => {
+  const body = pick(req.body, ["username", "email", "password"]);
+  const newUser = new User(body);
+
+  try {
+    const user = await newUser.save();
+    const token = await user.generateAuthToken();
+
+    if (!token) throw new Error();
+
+    res.header("Authorization", token).status(201).send({
+      success: true,
+      message: "user created successfully",
+      data: newUser,
+      token,
+    });
+  } catch (e) {
+    let errorsArr;
+    let errorsItems;
+
+    if (e.errors) {
+      errorsItems = Object.keys(e.errors);
+
+      errorsArr = errorsItems.map((error) => {
+        const properties = e.errors[error].properties;
+
+        if (properties.type === "required")
+          properties.message = `${properties.path} is required`;
+
+        return properties.message;
+      });
+    } else {
+      errorsArr = ["Email is taken"];
+    }
+
+    res.status(400).send({
+      success: false,
+      errors: errorsArr,
+    });
+  }
+};
 
 //@desc list all users
 //@route /api/v1/user
@@ -29,48 +74,14 @@ export const getUsers = async (req, res, next) => {
   }
 };
 
-//@desc create user
-//@route /api/v1/user
-//@method POST
-//@access private
-export const createUser = async (req, res, next) => {
-  const body = pick(req.body, [
-    "firstname",
-    "lastname",
-    "email",
-    "password",
-    "age",
-    "bio",
-  ]);
-  const newUser = new User(body);
-
-  try {
-    const user = await newUser.save();
-
-    const token = await newUser.generateAuthToken();
-
-    if (!token) throw new Error();
-
-    res.header("Authorization", token).status(201).send({
-      success: true,
-      message: "user created successfully",
-      data: newUser,
-    });
-  } catch (e) {
-    res.status(400).send({
-      success: false,
-    });
-  }
-};
-
 //@desc login
 //@route /api/v1/user/login
 //@method POST
 //@access private
 export const loginUser = (req, res, next) => {
-  const body = pick(req.body, ["email", "password"]);
+  const body = pick(req.body, ["email", "username", "password"]);
 
-  User.findByCredentials(body.email, body.password)
+  User.findByCredentials(body.email, body.username, body.password)
     .then(async (user) => {
       try {
         const token = await user.generateAuthToken();

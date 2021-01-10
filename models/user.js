@@ -1,20 +1,24 @@
 import validator from "validator";
-import pkg from "mongoose";
-import jwt, { decode } from "jsonwebtoken";
+import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import lodash from "lodash";
 import bcrypt from "bcryptjs";
 
-const { Schema, model } = pkg;
+const { Schema, model, Types } = mongoose;
 const { pick } = lodash;
 
 const UserSchema = new Schema(
   {
-    firstname: String,
-    lastname: String,
+    username: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 5,
+      unique: true,
+    },
     email: {
       type: String,
       required: true,
-      minlength: 3,
       unique: true,
       trim: true,
       validate: {
@@ -31,24 +35,11 @@ const UserSchema = new Schema(
         validator: (value) => {
           return validator.isStrongPassword(value, {
             minLength: 8,
-            minLowercase: 1,
-            minUppercase: 1,
-            minNumbers: 1,
-            minSymbols: 1,
-            returnScore: false,
-            pointsPerUnique: 1,
-            pointsPerRepeat: 0.5,
-            pointsForContainingLower: 10,
-            pointsForContainingUpper: 10,
-            pointsForContainingNumber: 10,
-            pointsForContainingSymbol: 10,
           });
         },
-        message: "Password is weak, please choose a stronger password",
+        message: "password is weak",
       },
     },
-    age: String,
-    bio: String,
     tokens: [
       {
         access: {
@@ -65,10 +56,10 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
-UserSchema.statics.findByCredentials = function (email, password) {
+UserSchema.statics.findByCredentials = function (email, username, password) {
   const User = this;
 
-  return User.findOne({ email }).then((user) => {
+  return User.findOne({ $or: [{ email }, { username }] }).then((user) => {
     if (!user) return Promise.reject();
 
     return new Promise((resolve, reject) => {
@@ -103,13 +94,7 @@ UserSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
 
-  const body = pick(userObject, [
-    "firstname",
-    "lastname",
-    "email",
-    "bio",
-    "age",
-  ]);
+  const body = pick(userObject, ["email", "_id", "username"]);
 
   return body;
 };
@@ -142,7 +127,7 @@ UserSchema.methods.generateAuthToken = async function () {
   user.tokens.push({ access, token });
 
   try {
-    const savedUser = user.save();
+    const savedUser = await user.save();
 
     if (savedUser) return token;
   } catch (e) {
