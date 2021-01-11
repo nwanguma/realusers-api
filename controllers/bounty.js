@@ -8,7 +8,7 @@ const { pick } = pkg;
 //@access private
 export const getBounties = async (req, res, next) => {
   try {
-    const docs = await Bounty.find({});
+    const docs = await Bounty.find({}).limit(1).skip();
 
     if (!docs)
       return res.status(200).send({

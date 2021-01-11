@@ -1,5 +1,9 @@
 import User from "../models/user.js";
 import lodash from "lodash";
+import Profile from "../models/profile.js";
+import mongodb from "mongodb";
+
+const { ObjectID } = mongodb;
 
 const { pick } = lodash;
 
@@ -8,10 +12,14 @@ const { pick } = lodash;
 //@method POST
 //@access private
 export const createUser = async (req, res, next) => {
+  const profileId = new ObjectID();
+
   const body = pick(req.body, ["username", "email", "password"]);
-  const newUser = new User(body);
+  const newUser = new User({ ...body, profile: profileId });
+  const newProfile = new Profile({ _id: profileId, user: newUser._id });
 
   try {
+    const profile = newProfile.save();
     const user = await newUser.save();
     const token = await user.generateAuthToken();
 

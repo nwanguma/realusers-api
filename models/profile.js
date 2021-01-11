@@ -26,7 +26,7 @@ const ProfileSchema = new Schema(
       type: String,
       default: "",
     },
-    user: { type: Schema.Types.ObjectId, ref: "users" },
+    user: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
@@ -41,6 +41,7 @@ ProfileSchema.methods.toJSON = function () {
     "occupation",
     "age",
     "bio",
+    "user",
   ]);
 
   return body;

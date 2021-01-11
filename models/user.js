@@ -40,6 +40,10 @@ const UserSchema = new Schema(
         message: "password is weak",
       },
     },
+    profile: {
+      type: Schema.Types.ObjectId,
+      ref: "Profile",
+    },
     tokens: [
       {
         access: {
@@ -59,23 +63,27 @@ const UserSchema = new Schema(
 UserSchema.statics.findByCredentials = function (email, username, password) {
   const User = this;
 
-  return User.findOne({ $or: [{ email }, { username }] }).then((user) => {
-    if (!user) return Promise.reject();
+  return User.findOne({ $or: [{ email }, { username }] })
+    .populate("profile")
+    .then((user) => {
+      if (!user) return Promise.reject();
 
-    return new Promise((resolve, reject) => {
-      bcrypt.compare(password, user.password, (err, res) => {
-        if (!res) {
-          reject();
-        } else {
-          resolve(user);
-        }
+      return new Promise((resolve, reject) => {
+        bcrypt.compare(password, user.password, (err, res) => {
+          if (!res) {
+            reject();
+          } else {
+            resolve(user);
+          }
+        });
       });
     });
-  });
 };
 
 UserSchema.pre("save", function (next) {
   const user = this;
+
+  user.populate("profile").execPopulate();
 
   if (user.isModified("password")) {
     bcrypt.genSalt(10, (err, salt) => {
@@ -94,7 +102,7 @@ UserSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
 
-  const body = pick(userObject, ["email", "_id", "username"]);
+  const body = pick(userObject, ["email", "_id", "username", "profile"]);
 
   return body;
 };

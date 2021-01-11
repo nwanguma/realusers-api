@@ -40,12 +40,10 @@ export const createProfile = async (req, res, next) => {
 export const getProfile = async (req, res, next) => {
   const id = req.user._id;
 
-  console.log(id);
-
   try {
-    const Profile = await Profile.findById(id);
+    const profile = await Profile.findOne({ user: id }).populate("user");
 
-    if (!Profile) throw new Error();
+    if (!profile) throw new Error();
 
     res.status(201).send({
       success: true,
@@ -81,13 +79,15 @@ export const updateProfile = async (req, res, next) => {
   if (body.bio) updateBody.bio = body.bio;
 
   try {
-    const profile = await Profile.findByIdAndUpdate(
-      id,
+    const profile = await Profile.findOneAndUpdate(
+      { user: id },
       {
         $set: updateBody,
       },
-      { returnOriginal: true }
+      { returnOriginal: false }
     );
+
+    if (!profile) throw new Error();
 
     res.status(201).send({
       success: true,
