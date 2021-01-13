@@ -7,21 +7,22 @@ import {
   getPromotion,
   updatePromotion,
   deletePromotion,
-} from "../controllers/promotion";
+} from "../controllers/promotion.js";
+import authenticate from "../middlewares/auth.js";
 
 const router = express.Router();
 
 router
   .route("/")
-  .get(getPromotions)
-  .post(createPromotion)
-  .patch(updatePromotions)
-  .delete(deletePromotions);
+  .get(authenticate, getPromotions)
+  .post(authenticate, createPromotion)
+  .patch(authenticate, updatePromotions)
+  .delete(authenticate, deletePromotions);
 
 router
   .route("/:id")
-  .get(getPromotion)
-  .patch(updatePromotion)
-  .delete(deletePromotion);
+  .get(authenticate, getPromotion)
+  .patch(authenticate, updatePromotion)
+  .delete(authenticate, deletePromotion);
 
 export default router;

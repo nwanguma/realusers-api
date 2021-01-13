@@ -1,14 +1,43 @@
 import Bounty from "../models/bounty.js";
-import pkg from "lodash";
-const { pick } = pkg;
+import lodash from "lodash";
+const { pick } = lodash;
 
 //@desc list all bounties
 //@route /api/v1/bounty
 //@method GET
 //@access private
 export const getBounties = async (req, res, next) => {
+  let filters;
+  const queries = pick(req.query, [
+    "skip",
+    "limit",
+    "company",
+    "type",
+    "submitted",
+    "rewardType",
+    "immediate",
+    "completed",
+  ]);
+
+  if (queries.company) filters.company = queries.company;
+  if (queries.type) filters.type = queries.type;
+  if (queries.submitted) filters.submitted = queries.submitted;
+  if (queries.rewardType) filters.rewardType = queries.rewardType;
+  if (queries.immediate) filters.immediate = queries.immediate;
+  if (queries.completed) filters.completed = queries.completed;
+
+  const skip = parseInt(queries.skip);
+  const limit = parseInt(queries.limit);
+
   try {
-    const docs = await Bounty.find({}).limit(1).skip();
+    const docs = await Bounty.find(filters)
+      .limit(limit || 0)
+      .skip(skip || 0);
+
+    const count = await Bounty.find(filters)
+      .limit(limit || 0)
+      .skip(skip || 0)
+      .count();
 
     if (!docs)
       return res.status(200).send({
@@ -19,6 +48,9 @@ export const getBounties = async (req, res, next) => {
     res.status(200).send({
       success: true,
       data: docs,
+      pagination: {
+        total: count,
+      },
     });
   } catch (e) {
     res.status(400).send({
@@ -69,8 +101,34 @@ export const createBounty = async (req, res, next) => {
 //@route /api/v1/bounty
 //@access private
 export const updateBounties = async (req, res, next) => {
+  let updates;
+  const queries = pick(req.queries, [
+    "skip",
+    "limit",
+    "company",
+    "type",
+    "submitted",
+    "rewardType",
+    "immediate",
+    "completed",
+  ]);
+
+  if (queries.company) updates.company = queries.company;
+  if (queries.type) updates.type = queries.type;
+  if (queries.submitted) updates.submitted = queries.submitted;
+  if (queries.rewardType) updates.rewardType = queries.rewardType;
+  if (queries.immediate) updates.immediate = queries.immediate;
+  if (queries.completed) updates.completed = queries.completed;
+
+  const skip = parseInt(queries.skip);
+  const limit = parseInt(queries.limit);
+
   try {
-    const bounties = await Bounty.updateMany({});
+    const bounties = await Bounty.updateMany({
+      $set: updates,
+    })
+      .limit(limit)
+      .skip(skip || 0);
 
     if (!bounties) {
       throw new Error();

@@ -1,10 +1,8 @@
-import validator from "validator";
-import pkg from "mongoose";
+import mongoose from "mongoose";
 import lodash from "lodash";
 
 const { pick } = lodash;
-
-const { Schema, model } = pkg;
+const { Schema, model } = mongoose;
 
 const BountySchema = new Schema(
   {

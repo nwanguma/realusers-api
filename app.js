@@ -5,11 +5,10 @@ import user from "./routes/user.js";
 import bounty from "./routes/bounty.js";
 import auth from "./routes/auth.js";
 import profile from "./routes/profile.js";
-// import promotion from "./routes/promotion";
+import promotion from "./routes/promotion.js";
 // import survey from "./routes/survey";
 
 const port = process.env.port || 3000;
-
 const app = express();
 
 app.use(bodyParser.json());
@@ -23,7 +22,7 @@ app.use("/api/v1/auth", auth);
 app.use("/api/v1/user", user);
 app.use("/api/v1/bounty", bounty);
 app.use("/api/v1/profile", profile);
-// app.use("api/v1/promotion", promotion);
+app.use("/api/v1/promotion", promotion);
 // app.use("api/v1/survey", survey);
 
 app.listen(port, () => {
